@@ -115,20 +115,8 @@ client.on('message', async (msg) => {
 
     // 🛑 Ignora grupos
     if (!from || from.endsWith('@g.us')) {
-        console.log(`⏭️ Mensagem ignorada: grupo detectado (${from})`);
+        console.log(`⏭️ Grupo ignorado: ${from}`);
         return;
-    }
-
-    // 🛑 Tentar ignorar contatos salvos (se disponível)
-    try {
-        const contact = await msg.getContact();
-        if (contact?.isMyContact) {
-            console.log(`⏭️ Mensagem ignorada: contato salvo (${contact.name || from})`);
-            return;
-        }
-    } catch (err) {
-        // Se houver erro ao obter contato, continua normalmente
-        console.log(`⚠️ Não conseguiu verificar contato, continuando...`);
     }
 
     console.log(`\n📨 Mensagem recebida de ${from}: "${body}"`);
