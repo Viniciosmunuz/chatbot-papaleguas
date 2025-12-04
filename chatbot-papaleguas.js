@@ -293,7 +293,7 @@ client.on('message', async (msg) => {
     }
 
     // Resposta padrão se não encaixar em nenhum estado
-    if (state !== 'SUPORTE' && !isInitialTrigger(body)) {
+    if (state && state !== 'SUPORTE') {
         await client.sendMessage(from, RESPONSES.RESPOSTA_PADRAO);
     }
 
