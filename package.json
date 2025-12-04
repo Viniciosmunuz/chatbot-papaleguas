@@ -1,0 +1,19 @@
+{
+  "name": "whatsapp-bot-polaroid",
+  "version": "1.0.0",
+  "description": "Bot WhatsApp para Espaço Polaroid - Gerenciamento de pedidos e orçamentos",
+  "main": "chatbot.js",
+  "scripts": {
+    "start": "node chatbot.js",
+    "dev": "node chatbot.js",
+    "test": "node test-bot.js"
+  },
+  "keywords": ["whatsapp", "bot", "polaroid", "eventos"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "1.33.2"
+  }
+}
