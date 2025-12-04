@@ -5,59 +5,11 @@
 // ═══════════════════════════════════════════════════════════════════
 
 require('dotenv').config();
-const express = require('express');
 const qrcode = require('qrcode-terminal');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
 const { Client, LocalAuth } = require('whatsapp-web.js');
-
-// ─── SERVIDOR HTTP ───
-const app = express();
-const PORT = process.env.PORT || 3000;
-let currentQRUrl = null;
-
-app.get('/', (req, res) => {
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Bot PAPALEGUAS - QR Code</title>
-    <style>
-        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Arial', sans-serif; margin: 0; }
-        .container { text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); max-width: 500px; }
-        h1 { color: #333; margin: 0 0 10px 0; font-size: 28px; }
-        p { color: #666; margin: 10px 0; }
-        .qr-container { margin: 30px 0; }
-        img { max-width: 100%; border: 3px solid #667eea; border-radius: 10px; }
-        .status { padding: 15px; background: #f0f0f0; border-radius: 8px; margin-top: 20px; }
-        .url-info { word-break: break-all; font-size: 12px; color: #999; margin-top: 15px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🍽️ Restaurante PAPALEGUAS</h1>
-        <p>Bot WhatsApp - Fazer Pedidos</p>
-        <div class="qr-container">
-            ${currentQRUrl ? `<img src="${currentQRUrl}" alt="QR Code">` : '<p style="color: #999;">⏳ Aguardando geração do QR code...</p>'}
-        </div>
-        <div class="status">
-            <p>${currentQRUrl ? '✅ Bot conectado e pronto!' : '⏳ Bot inicializando...'}</p>
-        </div>
-        <div class="url-info">
-            <p>Abra este link no seu navegador para escanear o QR code</p>
-        </div>
-    </div>
-</body>
-</html>`;
-    res.send(html);
-});
-
-app.listen(PORT, () => {
-    const railwayUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${PORT}`;
-    console.log(`\n🌐 Servidor web rodando em: ${railwayUrl}`);
-    console.log(`📱 Acesse a URL acima para escanear o QR code\n`);
-});
 
 // ─── CONSTANTES ───
 const client = new Client({
@@ -95,17 +47,14 @@ client.on('qr', async qr => {
     qrcode.generate(qr, { small: true });
     
     try {
-        const qrUrl = await QRCode.toDataURL(qr);
-        currentQRUrl = qrUrl;
-        
-        const railwayUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${PORT}`;
-        console.log('\n' + '='.repeat(60));
-        console.log('🌐 URL PARA ESCANEAR O QR CODE:');
+        const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN || 'https://seu-bot.railway.app';
+        console.log('\n' + '='.repeat(70));
+        console.log('🔗 USE ESTA URL PARA GERAR UM QR CODE EXTERNO:');
         console.log(railwayUrl);
-        console.log('='.repeat(60) + '\n');
+        console.log('='.repeat(70) + '\n');
         
     } catch (err) {
-        console.error('❌ Erro ao gerar QR:', err);
+        console.error('❌ Erro ao gerar URL:', err);
     }
 });
 
