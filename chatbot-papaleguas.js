@@ -114,11 +114,19 @@ client.on('message', async (msg) => {
     const body = (msg.body || '').trim();
 
     // 🛑 Ignora grupos
-    if (!from || from.endsWith('@g.us')) return;
+    if (!from || from.endsWith('@g.us')) {
+        console.log(`⏭️ Mensagem ignorada: grupo detectado (${from})`);
+        return;
+    }
 
     // 🛑 Ignora contatos salvos (apenas números não salvos)
     const contact = await msg.getContact();
-    if (contact.isMyContact) return;
+    if (contact.isMyContact) {
+        console.log(`⏭️ Mensagem ignorada: contato salvo (${contact.name || from})`);
+        return;
+    }
+
+    console.log(`\n📨 Mensagem de ${contact.name || from}: "${body}"`);
 
     let state = userStages[from] || null;
     const now = Date.now();
