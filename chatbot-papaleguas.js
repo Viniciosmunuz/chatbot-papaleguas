@@ -43,45 +43,22 @@ const isInitialTrigger = text =>
 // ─── INICIALIZAR CLIENTE ───
 
 client.on('qr', async qr => {
-    console.log('📱 QR CODE gerado! Escaneie com WhatsApp Web:\n');
+    console.log('\n📱 QR CODE gerado! Escaneie com WhatsApp Web:\n');
     qrcode.generate(qr, { small: true });
     
     try {
         const qrUrl = await QRCode.toDataURL(qr);
+        console.log('\n' + '='.repeat(60));
+        console.log('🔗 URL DO QR CODE:');
+        console.log(qrUrl);
+        console.log('='.repeat(60) + '\n');
+        
+        // Salvar em arquivo também
         const qrPath = path.join(__dirname, 'qr_code.txt');
-        
-        // Salvar URL em arquivo
         fs.writeFileSync(qrPath, qrUrl, 'utf8');
-        console.log('\n🔗 URL DO QR CODE salva em qr_code.txt');
-        console.log('URL: ' + qrUrl.substring(0, 100) + '...\n');
-        
-        // Também criar um arquivo HTML para visualizar
-        const htmlPath = path.join(__dirname, 'qr_code.html');
-        const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-    <title>QR Code PAPALEGUAS</title>
-    <style>
-        body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f0f0; font-family: Arial; }
-        .container { text-align: center; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        img { max-width: 400px; margin: 20px 0; border: 2px solid #ddd; padding: 10px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🍽️ Bot PAPALEGUAS</h1>
-        <p>Escaneie o QR code abaixo com seu WhatsApp:</p>
-        <img src="${qrUrl}" alt="QR Code">
-        <p>QR gerado em: ${new Date().toLocaleString('pt-BR')}</p>
-    </div>
-</body>
-</html>`;
-        fs.writeFileSync(htmlPath, htmlContent, 'utf8');
-        console.log('📄 Arquivo qr_code.html criado para visualizar o QR code\n');
         
     } catch (err) {
-        console.error('Erro ao gerar URL do QR:', err);
+        console.error('❌ Erro ao gerar URL do QR:', err);
     }
 });
 
