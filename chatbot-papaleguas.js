@@ -1,16 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════
+//  🍽️ BOT GARÇOM WEB - RESTAURANTE E LANCHONETE PAPALEGUAS
+// ═══════════════════════════════════════════════════════════════════
+// Bot automático para receber pedidos via WhatsApp
+// ═══════════════════════════════════════════════════════════════════
+
 require('dotenv').config();
 const qrcode = require('qrcode-terminal');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 
-// ═══════════════════════════════════════════════════════════════════
-//                       CONFIGURAÇÕES GERAIS
-// ═══════════════════════════════════════════════════════════════════
-
-console.log('\n╔════════════════════════════════════════════════════════════════╗');
-console.log('║        🍽️  BOT RESTAURANTE PAPALEGUAS INICIANDO...            ║');
-console.log('╚════════════════════════════════════════════════════════════════╝\n');
-
-console.log('📦 Criando cliente WhatsApp...');
+// ─── CONSTANTES ───
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
@@ -19,100 +17,86 @@ const client = new Client({
     }
 });
 
+// Armazena o estado de conversa de cada usuário
 const userStages = {};
+// Armazena dados temporários do pedido (nome, pedido, endereço)
 const userData = {};
+// Tempo de inatividade antes de resetar a conversa (30 minutos)
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
+// Número do proprietário para receber notificações de pedidos
 const ownerNumber = process.env.OWNER_NUMBER || '5592999130838@c.us';
 
-console.log('✅ Configurações carregadas');
-console.log('📱 Número do proprietário:', ownerNumber);
-console.log('⏳ Aguardando conexão com WhatsApp...\n');
+console.log('🍽️ BOT PAPALEGUAS iniciando...');
 
-// ═══════════════════════════════════════════════════════════════════
-//                      FUNÇÕES AUXILIARES
-// ═══════════════════════════════════════════════════════════════════
+// ─── FUNÇÕES AUXILIARES ───
 
+/** Aguarda X milissegundos */
 const delay = ms => new Promise(res => setTimeout(res, ms));
-const isInitialTrigger = text => /(oi|ola|olá|menu|boa tarde|boa noite|bom dia|olá papaleguas|oi papaleguas)/i.test(text);
 
-// ═══════════════════════════════════════════════════════════════════
-//                    INICIALIZAÇÃO DO CLIENTE
-// ═══════════════════════════════════════════════════════════════════
+/** Verifica se mensagem é um gatilho para iniciar (oi, olá, menu, etc) */
+const isInitialTrigger = text => 
+    /(oi|ola|olá|menu|boa tarde|boa noite|bom dia)/i.test(text);
+
+// ─── INICIALIZAR CLIENTE ───
 
 client.on('qr', qr => {
-    try {
-        console.log('\n╔════════════════════════════════════════════════════════════════╗');
-        console.log('║                     QR CODE GERADO!                           ║');
-        console.log('╚════════════════════════════════════════════════════════════════╝\n');
-        
-        qrcode.generate(qr, { small: true });
-        
-        console.log('\n' + '═'.repeat(70));
-        console.log('📱 QR CODE URL:');
-        console.log('═'.repeat(70));
-        console.log(qr);
-        console.log('═'.repeat(70));
-        console.log('💡 Dica: Escaneie o QR code acima com seu WhatsApp Web para conectar!');
-        console.log('═'.repeat(70) + '\n');
-    } catch (error) {
-        console.error('❌ Erro ao gerar QR code:', error.message);
-    }
+    console.log('📱 QR CODE gerado! Escaneie com WhatsApp Web:\n');
+    qrcode.generate(qr, { small: true });
 });
 
 client.on('ready', () => {
-    console.log('✅ Bot WhatsApp conectado e pronto para receber mensagens!');
+    console.log('✅ Bot conectado e pronto para receber pedidos!');
 });
 
 client.on('error', error => {
-    console.error('❌ ERRO NO BOT:', error);
+    console.error('❌ Erro:', error.message);
 });
 
-process.on('unhandledRejection', error => {
-    console.error('❌ ERRO NÃO TRATADO:', error);
-});
-
-console.log('🔄 Inicializando cliente WhatsApp...');
 client.initialize().catch(error => {
-    console.error('❌ ERRO ao inicializar:', error.message);
+    console.error('❌ Falha ao inicializar:', error.message);
     process.exit(1);
 });
 
-// ═══════════════════════════════════════════════════════════════════
-//                    RESPOSTAS CENTRALIZADAS
-// ═══════════════════════════════════════════════════════════════════
+// ─── MENSAGENS DO BOT ───
 
 const RESPONSES = {
-    BOAS_VINDAS: 'Olá! Bem-vindo(a) ao Restaurante e Lanchonete PAPALEGUAS 🍽️\n\nSomos um espaço aconchegante oferecendo deliciosas opções de comida. Escolha uma opção:\n\n1️⃣ Ver Cardápio\n2️⃣ Fazer um Pedido\n3️⃣ Falar com Atendente',
+    // Menu inicial
+    BOAS_VINDAS: 'Olá! Bem-vindo(a) ao Restaurante e Lanchonete PAPALEGUAS 🍽️\n\n📋 *CARDÁPIO:* https://drive.google.com/file/d/1-exemplo-cardapio/view?usp=drive_link\n⏰ *HORÁRIO:* Todos os dias 5:30 - 23:30\n💰 *Taxa de Entrega:* R$ 3,00\n\nEscolha uma opção:\n\n1️⃣ Fazer um Pedido\n2️⃣ Falar com Atendente',
     
+    // Links e informações
     CARDAPIO_LINK: 'https://drive.google.com/file/d/1-exemplo-cardapio/view?usp=drive_link',
+    CARDAPIO_MSG: (link) => `📋 *CARDÁPIO COMPLETO*\n\n👉 ${link}\n\nDeseja fazer um pedido? Digite *2*`,
+    HORARIO_FUNCIONAMENTO: '⏰ *HORÁRIO DE FUNCIONAMENTO*\n• Todos os dias: 5:30 - 23:30\n\n💰 Taxa de Entrega: R$ 3,00',
     
-    CARDAPIO_MSG: (link) => `📋 *Confira nosso Cardápio Completo*\n\n👉 ${link}\n\nTemos várias opções de pratos deliciosos!\n\n💡 *Deseja fazer um pedido?*\nDigite *2* para fazer seu pedido!`,
+    // Fluxo de pedido
+    AGUARDANDO_NOME: 'Qual é o seu *Nome Completo*?',
+    AGUARDANDO_PEDIDO: (nome) => `Prazer, ${nome}! 🍴\n\n*O que você gostaria de pedir?*`,
     
-    HORARIO_FUNCIONAMENTO: '\n⏰ *HORÁRIO DE FUNCIONAMENTO*\n• Segunda a Quinta: 11h - 22h\n• Sexta e Sábado: 11h - 23h\n• Domingo: 12h - 22h\n\nTaxa de Entrega: R$ 3,00',
+    AGUARDANDO_ENDERECO: '*Seu Endereço de Entrega?*\n\n(Rua, número, bairro)',
     
-    AGUARDANDO_NOME: 'Ótimo! Vamos começar seu pedido 😊\n\nQual é o seu *Nome Completo*?',
+    AGUARDANDO_PAGAMENTO: '*Como você prefere pagar?*\n\n1️⃣ Pix\n2️⃣ Dinheiro\n3️⃣ Cartão na entrega',
     
-    AGUARDANDO_PEDIDO: (nome) => `Prazer, ${nome}! 🍴\n\n*O que você gostaria de pedir?*\n\nPor favor, descreva os itens que deseja (você pode consultar nosso cardápio digitando o link que enviamos).`,
+    PEDIDO_TUDO_JUNTO: 'Por favor, envie seu pedido com os seguintes dados:\n\n*📝 Formato:*\nNome: Seu Nome Completo\nPedido: O que você quer comer\nEndereço: Rua, número, bairro\nPagamento: 1 (Pix) / 2 (Dinheiro) / 3 (Cartão)',    PEDIDO_CONFIRMACAO: (nome, pedido, endereco) => 
+        `✅ *RESUMO DO PEDIDO*\n\n👤 Nome: ${nome}\n🍽️ Pedido: ${pedido}\n📍 Endereço: ${endereco}\n💰 Taxa: R$ 3,00\n\nTudo certo? Digite *SIM* ou *NÃO*`,
     
-    AGUARDANDO_ENDERECO: '*Qual é o seu Endereço de Entrega?*\n\n(Rua, número, bairro, complemento)',
+    PEDIDO_CONFIRMADO: (nome, pedido, endereco, pagamento) => 
+        `✅ *Pedido Confirmado!*\n\n👤 ${nome}\n🍽️ ${pedido}\n📍 ${endereco}\n💳 Pagamento: ${pagamento}\n\n⏳ *Um atendente entrará em contato em breve para:*\n• Confirmar seu pedido\n• Informar o valor total\n• Informar o tempo de entrega\n\nObrigado por escolher PAPALEGUAS! 🍽️`,
     
-    PEDIDO_CONFIRMACAO: (nome, pedido, endereco) => `✅ *Resumo do Pedido*\n\n👤 Nome: ${nome}\n🍽️ Pedido: ${pedido}\n📍 Endereço: ${endereco}\n💰 Taxa de Entrega: R$ 3,00\n\n*Tudo certo?*\nDigite:\n👉 *SIM* para confirmar\n👉 *NÃO* para cancelar`,
+    // Aviso para o dono
+    PEDIDO_AVISO_DONO: (nome, numeroCliente, pedido, endereco) => 
+        `🚨 *NOVO PEDIDO* 🚨\n\n👤 Cliente: ${nome}\n📱 https://wa.me/${numeroCliente}\n🍽️ Pedido: ${pedido}\n📍 Endereço: ${endereco}\n💰 Taxa: R$ 3,00\n\n👉 *AÇÃO:* Confirme o pedido, informe o valor total + taxa e o tempo de entrega.`,
     
-    PEDIDO_CONFIRMADO: (nome, pedido, endereco) => `✅ *Pedido Confirmado!*\n\n👤 Nome: ${nome}\n🍽️ Pedido: ${pedido}\n📍 Endereço: ${endereco}\n💰 Taxa de Entrega: R$ 3,00\n\n⏳ *Aguardando confirmação...*\nUm atendente entrará em contato em breve para confirmar seu pedido e informar o tempo de preparo! ⏱️`,
+    // Suporte
+    SUPORTE_INICIO: 'Um atendente vai responder em breve! 🎯\nDigite *Menu* para voltar.',
+    SUPORTE_AVISO_DONO: (nome, numero) => `👤 *CLIENTE SOLICITANDO ATENDIMENTO*\n\nCliente: ${nome}\n📱 https://wa.me/${numero}`,
     
-    PEDIDO_AVISO_DONO: (nome, numeroCliente, pedido, endereco) => `🚨 *NOVO PEDIDO RECEBIDO* 🚨\n\n👤 Cliente: ${nome}\n📱 WhatsApp: https://wa.me/${numeroCliente}\n🍽️ Pedido: ${pedido}\n📍 Endereço: ${endereco}\n💰 Taxa de Entrega: R$ 3,00\n\n👉 *AÇÃO:* Confirme o pedido, calcule o valor total e envie o tempo estimado de entrega.`,
-    
-    SUPORTE_INICIO: 'Ok! Um atendente humano já vai te responder em instantes! 🎯\n\nDigite *Menu* para voltar ao menu principal.',
-    
-    SUPORTE_AVISO_DONO: (nomeCliente, numeroCliente) => `👤 *CLIENTE SOLICITANDO ATENDIMENTO* 👤\n\nCliente: ${nomeCliente}\n📱 WhatsApp: https://wa.me/${numeroCliente}\n\n👉 *AÇÃO:* Entre em contato com o cliente para ajudá-lo.`,
-    
-    INATIVIDADE: 'Olá! Parece que ficamos inativos por um tempo. Para recomeçar, digite *Menu* ou escolha uma opção:',
-    
-    RESPOSTA_PADRAO: 'Desculpe, não consegui entender sua última mensagem. Digite *Menu* para ver as opções ou aguarde nosso atendimento!',
+    // Mensagens padrão
+    INATIVIDADE: 'Ficamos inativos por um tempo. Digite *Menu* para recomeçar.',
+    RESPOSTA_PADRAO: 'Não entendi. Digite *Menu* para ver as opções.',
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//                    HANDLER DE MENSAGENS
+//                    PROCESSADOR DE MENSAGENS
 // ═══════════════════════════════════════════════════════════════════
 
 client.on('message', async (msg) => {
@@ -120,62 +104,58 @@ client.on('message', async (msg) => {
     const from = msg.from;
     const body = (msg.body || '').trim();
 
-    // 🛑 Bloqueia grupos
+    // 🛑 Ignora grupos
     if (!from || from.endsWith('@g.us')) return;
 
-    // 🛑 Bloqueia contatos salvos
+    // 🛑 Ignora contatos salvos (apenas números não salvos)
     const contact = await msg.getContact();
     if (contact.isMyContact) return;
 
     let state = userStages[from] || null;
     const now = Date.now();
 
-    // ⏱️ Verifica inatividade (30 minutos)
+    // ⏱️ Reset se inativo por 30 minutos
     if (state && userData[from]?.lastActivity && (now - userData[from].lastActivity > INACTIVITY_TIMEOUT)) {
-        await client.sendMessage(from, RESPONSES.INATIVIDADE);
         state = null;
         delete userStages[from];
         delete userData[from];
     }
 
-    // Atualiza timestamp de atividade
+    // Atualizar última atividade
     if (state !== 'SUPORTE') {
         userData[from] = userData[from] || {};
         userData[from].lastActivity = now;
     }
 
-    // Simula digitação (UX mais humano)
+    // UX: simula digitação
     await msg.getChat().then(chat => chat.sendStateTyping());
     await delay(300);
 
-    // Sair de SUPORTE com "Menu"
+    // Volta ao menu a partir de SUPORTE
     if (state === 'SUPORTE' && isInitialTrigger(body)) {
         await client.sendMessage(from, RESPONSES.BOAS_VINDAS);
         userStages[from] = 'MENU_PRINCIPAL';
         return;
     }
 
-    // Iniciar conversa
+    // Inicia conversa
     if (!state && isInitialTrigger(body)) {
       await client.sendMessage(from, RESPONSES.BOAS_VINDAS);
       userStages[from] = 'MENU_PRINCIPAL';
       return;
     }
 
+    // ═══════════════════════════════════════════════════════════════════
     // 📋 MENU PRINCIPAL
+    // ═══════════════════════════════════════════════════════════════════
     if (state === 'MENU_PRINCIPAL') {
       if (body === '1') {
-        await client.sendMessage(from, RESPONSES.CARDAPIO_MSG(RESPONSES.CARDAPIO_LINK));
-        await client.sendMessage(from, RESPONSES.HORARIO_FUNCIONAMENTO);
-        return;
-      }
-      if (body === '2') {
-        await client.sendMessage(from, RESPONSES.AGUARDANDO_NOME);
-        userStages[from] = 'AGUARDANDO_NOME';
+        await client.sendMessage(from, RESPONSES.PEDIDO_TUDO_JUNTO);
+        userStages[from] = 'AGUARDANDO_DADOS_COMPLETOS';
         userData[from] = userData[from] || {};
         return;
       }
-      if (body === '3') {
+      if (body === '2') {
         const nomeCliente = userData[from]?.nome || 'Cliente';
         const numeroCliente = from.replace('@c.us', '');
         await client.sendMessage(ownerNumber, RESPONSES.SUPORTE_AVISO_DONO(nomeCliente, numeroCliente));
@@ -187,29 +167,58 @@ client.on('message', async (msg) => {
       return;
     }
 
-    // 🛍️ FUNIL: PEDIDO
+    // ═══════════════════════════════════════════════════════════════════
+    // 🛍️ FLUXO DE PEDIDO
+    // ═══════════════════════════════════════════════════════════════════
     if (state === 'AGUARDANDO_NOME') {
-      userData[from].nome = body;
-      const nomeCurto = userData[from].nome.split(" ")[0];
-      await client.sendMessage(from, RESPONSES.AGUARDANDO_PEDIDO(nomeCurto));
-      userStages[from] = 'AGUARDANDO_PEDIDO';
+      await client.sendMessage(from, RESPONSES.PEDIDO_TUDO_JUNTO);
+      userStages[from] = 'AGUARDANDO_DADOS_COMPLETOS';
+      userData[from] = userData[from] || {};
       return;
     }
 
-    if (state === 'AGUARDANDO_PEDIDO') {
-      if (body.length > 3) {
-          userData[from].pedido = body;
-          await client.sendMessage(from, RESPONSES.AGUARDANDO_ENDERECO);
-          userStages[from] = 'AGUARDANDO_ENDERECO';
-          return;
+    if (state === 'AGUARDANDO_DADOS_COMPLETOS') {
+      // Parse dos dados (Nome, Pedido, Endereço, Pagamento)
+      const linhas = body.split('\n').map(l => l.trim());
+      let nome = '', pedido = '', endereco = '', pagamento = '';
+      
+      linhas.forEach(linha => {
+        if (linha.toLowerCase().startsWith('nome:')) {
+          nome = linha.replace(/^nome:\s*/i, '').trim();
+        } else if (linha.toLowerCase().startsWith('pedido:')) {
+          pedido = linha.replace(/^pedido:\s*/i, '').trim();
+        } else if (linha.toLowerCase().startsWith('endereço:') || linha.toLowerCase().startsWith('endereco:')) {
+          endereco = linha.replace(/^endere[çc]o:\s*/i, '').trim();
+        } else if (linha.toLowerCase().startsWith('pagamento:')) {
+          pagamento = linha.replace(/^pagamento:\s*/i, '').trim();
+        }
+      });
+      
+      // Validar campos
+      if (!nome || !pedido || !endereco || !pagamento) {
+        await client.sendMessage(from, '⚠️ Por favor, preencha todos os campos corretamente.\n\n' + RESPONSES.PEDIDO_TUDO_JUNTO);
+        return;
       }
-      await client.sendMessage(from, '⚠️ Por favor, descreva seu pedido com mais detalhes.');
-      return;
-    }
-
-    if (state === 'AGUARDANDO_ENDERECO') {
-      userData[from].endereco = body;
-      const { nome, pedido, endereco } = userData[from];
+      
+      // Traduzir pagamento
+      const pagamentoMap = {
+        '1': 'Pix',
+        '2': 'Dinheiro',
+        '3': 'Cartão na entrega'
+      };
+      
+      if (!pagamentoMap[pagamento]) {
+        await client.sendMessage(from, '⚠️ Pagamento inválido. Use 1 (Pix), 2 (Dinheiro) ou 3 (Cartão).');
+        return;
+      }
+      
+      // Salvar dados
+      userData[from].nome = nome;
+      userData[from].pedido = pedido;
+      userData[from].endereco = endereco;
+      userData[from].pagamento = pagamentoMap[pagamento];
+      
+      // Mostrar resumo para confirmar
       await client.sendMessage(from, RESPONSES.PEDIDO_CONFIRMACAO(nome, pedido, endereco));
       userStages[from] = 'PEDIDO_AGUARDANDO_CONFIRMACAO';
       return;
@@ -218,21 +227,21 @@ client.on('message', async (msg) => {
     if (state === 'PEDIDO_AGUARDANDO_CONFIRMACAO') {
       const confirmacao = body.toUpperCase().trim();
       if (confirmacao === 'SIM' || confirmacao === 'S') {
-        const { nome, pedido, endereco } = userData[from];
+        const { nome, pedido, endereco, pagamento } = userData[from];
         const numeroCliente = from.replace('@c.us', '');
-        await client.sendMessage(from, RESPONSES.PEDIDO_CONFIRMADO(nome, pedido, endereco));
+        await client.sendMessage(from, RESPONSES.PEDIDO_CONFIRMADO(nome, pedido, endereco, pagamento));
         await delay(1000);
         await client.sendMessage(ownerNumber, RESPONSES.PEDIDO_AVISO_DONO(nome, numeroCliente, pedido, endereco));
         userStages[from] = 'PEDIDO_CONFIRMADO';
         return;
       }
       if (confirmacao === 'NÃO' || confirmacao === 'NAO' || confirmacao === 'N') {
-        await client.sendMessage(from, `Pedido cancelado. Voltando ao menu...\n\n${RESPONSES.BOAS_VINDAS}`);
+        await client.sendMessage(from, `Pedido cancelado.\n\n${RESPONSES.BOAS_VINDAS}`);
         userStages[from] = 'MENU_PRINCIPAL';
         delete userData[from];
         return;
       }
-      await client.sendMessage(from, '⚠️ Por favor, digite *SIM* para confirmar ou *NÃO* para cancelar.');
+      await client.sendMessage(from, '⚠️ Digite *SIM* ou *NÃO*');
       return;
     }
 
@@ -243,18 +252,35 @@ client.on('message', async (msg) => {
             delete userData[from];
             return;
         }
-        if (body.length > 0) {
-             await client.sendMessage(from, 'Seu pedido foi confirmado! Um atendente entrará em contato em breve com mais informações.');
-             return;
-        }
     }
 
-    // Resposta padrão
-    if (state !== 'SUPORTE' && state !== 'PEDIDO_CONFIRMADO' && !isInitialTrigger(body)) {
+    // Forma livre de pedido (opção 2)
+    if (state === 'PEDIDO_FORMA_LIVRE') {
+        if (isInitialTrigger(body)) {
+            await client.sendMessage(from, RESPONSES.BOAS_VINDAS);
+            userStages[from] = 'MENU_PRINCIPAL';
+            delete userData[from];
+            return;
+        }
+        
+        const numeroCliente = from.replace('@c.us', '');
+        const nomeCliente = userData[from]?.nome || 'Cliente';
+        
+        // Enviar o pedido para o dono
+        const avisoFormaLivre = `🚨 *PEDIDO RECEBIDO (FORMA LIVRE)* 🚨\n\n👤 Cliente: ${nomeCliente}\n📱 https://wa.me/${numeroCliente}\n\n📝 Mensagem:\n${body}\n\n👉 *AÇÃO:* Verifique com o cliente os detalhes (nome, endereço, forma de pagamento) e informe o valor.`;
+        
+        await client.sendMessage(ownerNumber, avisoFormaLivre);
+        await client.sendMessage(from, '✅ Seu pedido foi enviado!\n\n⏳ Um atendente entrará em contato em breve para confirmar os detalhes.');
+        userStages[from] = 'PEDIDO_CONFIRMADO';
+        return;
+    }
+
+    // Resposta padrão se não encaixar em nenhum estado
+    if (state !== 'SUPORTE' && !isInitialTrigger(body)) {
         await client.sendMessage(from, RESPONSES.RESPOSTA_PADRAO);
     }
 
   } catch (err) {
-    console.error('❌ Erro ao processar mensagem:', err);
+    console.error('❌ Erro:', err.message);
   }
 });
