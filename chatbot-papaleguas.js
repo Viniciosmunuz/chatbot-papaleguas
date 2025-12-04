@@ -6,9 +6,6 @@
 
 require('dotenv').config();
 const qrcode = require('qrcode-terminal');
-const QRCode = require('qrcode');
-const fs = require('fs');
-const path = require('path');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 
 // ─── CONSTANTES ───
@@ -42,20 +39,18 @@ const isInitialTrigger = text =>
 
 // ─── INICIALIZAR CLIENTE ───
 
-client.on('qr', async qr => {
+client.on('qr', qr => {
     console.log('\n📱 QR CODE gerado! Escaneie com WhatsApp Web:\n');
     qrcode.generate(qr, { small: true });
     
-    try {
-        const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN || 'https://seu-bot.railway.app';
-        console.log('\n' + '='.repeat(70));
-        console.log('🔗 USE ESTA URL PARA GERAR UM QR CODE EXTERNO:');
-        console.log(railwayUrl);
-        console.log('='.repeat(70) + '\n');
-        
-    } catch (err) {
-        console.error('❌ Erro ao gerar URL:', err);
-    }
+    // Log detalhado da URL
+    console.log('\n' + '═'.repeat(70));
+    console.log('🔗 QR CODE URL:');
+    console.log('═'.repeat(70));
+    console.log(qr);
+    console.log('═'.repeat(70));
+    console.log('💡 Dica: Use esta URL para gerar um QR code externo!');
+    console.log('═'.repeat(70) + '\n');
 });
 
 client.on('ready', () => {
