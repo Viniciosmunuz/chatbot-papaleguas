@@ -35,7 +35,7 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 
 /** Verifica se mensagem é um gatilho para iniciar (oi, olá, menu, etc) */
 const isInitialTrigger = text => 
-    /(oi|ola|olá|menu|boa tarde|boa noite|bom dia)/i.test(text);
+    /(oi|ola|olá|menu|boa tarde|boa noite|bom dia|oi tudo|olá tudo|e aí|oq|start|help)/i.test(text);
 
 // ─── INICIALIZAR CLIENTE ───
 
