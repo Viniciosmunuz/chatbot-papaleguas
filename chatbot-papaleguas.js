@@ -119,14 +119,7 @@ client.on('message', async (msg) => {
         return;
     }
 
-    // 🛑 Ignora contatos salvos (apenas números não salvos)
-    const contact = await msg.getContact();
-    if (contact.isMyContact) {
-        console.log(`⏭️ Mensagem ignorada: contato salvo (${contact.name || from})`);
-        return;
-    }
-
-    console.log(`\n📨 Mensagem de ${contact.name || from}: "${body}"`);
+    console.log(`\n📨 Mensagem recebida de ${from}: "${body}"`);
 
     let state = userStages[from] || null;
     const now = Date.now();
