@@ -6,6 +6,7 @@
 
 require('dotenv').config();
 const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 
 // ─── CONSTANTES ───
@@ -39,9 +40,16 @@ const isInitialTrigger = text =>
 
 // ─── INICIALIZAR CLIENTE ───
 
-client.on('qr', qr => {
+client.on('qr', async qr => {
     console.log('📱 QR CODE gerado! Escaneie com WhatsApp Web:\n');
     qrcode.generate(qr, { small: true });
+    
+    try {
+        const qrUrl = await QRCode.toDataURL(qr);
+        console.log('\n🔗 URL DO QR CODE:\n' + qrUrl + '\n');
+    } catch (err) {
+        console.error('Erro ao gerar URL do QR:', err);
+    }
 });
 
 client.on('ready', () => {
